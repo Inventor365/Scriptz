@@ -1,0 +1,9 @@
+# Temporary & OS files
+*.log
+*.tmp
+*.bak
+.DS_Store
+
+# Virtual environments
+venv/
+.venv/
