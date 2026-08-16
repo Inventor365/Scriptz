@@ -55,6 +55,7 @@ show_help() {
     echo ""
     echo -e "${BOLD}OPTIONS:${NC}"
     echo "  -f, --file <path>        Path to the file to upload"
+    echo "  -a, --auto               Auto-detect Android ROM zip in out/target/product/*/"
     echo "  -s, --service <service>  Target upload service (number or name)"
     echo "  -u, --user <username>    Username (for SourceForge)"
     echo "  -p, --path <path>        Target path / project folder (for SourceForge)"
@@ -65,6 +66,7 @@ show_help() {
     echo "  -h, --help               Show this help menu"
     echo ""
     echo -e "${BOLD}EXAMPLES:${NC}"
+    echo "  ./upload.sh -a -s sourceforge -u john -p myproject/peridot"
     echo "  ./upload.sh -f build.zip -s gofile"
     echo "  ./upload.sh -f rom.zip -s sourceforge -u john -p myproject/v1.0"
     echo "  ./upload.sh -f app.apk -s pixeldrain -k YOUR_API_KEY"
@@ -81,6 +83,75 @@ read_secret() {
         read -r secret_val
     fi
     echo "$secret_val"
+}
+
+detect_rom_file() {
+    local search_dir="out/target/product"
+    if [ ! -d "$search_dir" ]; then
+        return 1
+    fi
+
+    # Search for .zip files in out/target/product/*/*.zip
+    local zip_files=()
+    while IFS= read -r line; do
+        [ -n "$line" ] && zip_files+=("$line")
+    done < <(find "$search_dir" -type f -name "*.zip" 2>/dev/null)
+
+    if [ ${#zip_files[@]} -eq 0 ]; then
+        return 1
+    fi
+
+    # Filter for zip files >= 1GB (1073741824 bytes), typical for Android ROMs
+    local rom_candidates=()
+    for f in "${zip_files[@]}"; do
+        local sz_bytes
+        sz_bytes=$(stat -c%s "$f" 2>/dev/null || stat -f%z "$f" 2>/dev/null || echo 0)
+        if [ "$sz_bytes" -ge 1073741824 ]; then
+            rom_candidates+=("$f")
+        fi
+    done
+
+    # Fallback to all zip files if none >= 1GB
+    if [ ${#rom_candidates[@]} -eq 0 ]; then
+        rom_candidates=("${zip_files[@]}")
+    fi
+
+    # Sort candidates by modification time (newest first)
+    local sorted_roms=()
+    while IFS= read -r line; do
+        [ -n "$line" ] && sorted_roms+=("$line")
+    done < <(ls -1t "${rom_candidates[@]}" 2>/dev/null)
+
+    if [ ${#sorted_roms[@]} -eq 0 ]; then
+        return 1
+    fi
+
+    if [ ${#sorted_roms[@]} -eq 1 ]; then
+        FILE_PATH="${sorted_roms[0]}"
+        echo -e "${GREEN}🔍 Auto-detected ROM file:${NC} ${BOLD}$FILE_PATH${NC} ($(du -h "$FILE_PATH" | cut -f1))"
+        return 0
+    fi
+
+    echo -e "${CYAN}🔍 Found ${#sorted_roms[@]} ROM file(s) in $search_dir:${NC}"
+    local idx=1
+    for r in "${sorted_roms[@]}"; do
+        echo -e "  [$idx] $r ($(du -h "$r" | cut -f1))"
+        ((idx++))
+    done
+
+    if [ -t 0 ]; then
+        read -p "Select ROM file [1]: " choice
+        choice=${choice:-1}
+        if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le "${#sorted_roms[@]}" ]; then
+            FILE_PATH="${sorted_roms[$((choice-1))]}"
+        else
+            FILE_PATH="${sorted_roms[0]}"
+        fi
+    else
+        FILE_PATH="${sorted_roms[0]}"
+    fi
+    echo -e "${GREEN}Selected ROM:${NC} ${BOLD}$FILE_PATH${NC}"
+    return 0
 }
 
 check_file() {
@@ -264,8 +335,18 @@ upload_sourceforge() {
     fi
 
     if [ -z "$REMOTE_PATH" ]; then
+        local detected_codename=""
+        if [[ "$FILE_PATH" =~ out/target/product/([^/]+)/ ]]; then
+            detected_codename="${BASH_REMATCH[1]}"
+        fi
+
         echo -e "Please enter upload location on SourceForge:"
-        echo -e "${YELLOW}Note: Format as 'project_name/folder' (e.g. myproject/v1.0)${NC}"
+        if [ -n "$detected_codename" ]; then
+            echo -e "${YELLOW}Detected device codename:${NC} ${BOLD}$detected_codename${NC}"
+            echo -e "${YELLOW}Note: Format as 'project_name/folder' (e.g. myproject/$detected_codename)${NC}"
+        else
+            echo -e "${YELLOW}Note: Format as 'project_name/folder' (e.g. myproject/v1.0)${NC}"
+        fi
         read -p "Path: " REMOTE_PATH
     fi
 
@@ -381,6 +462,10 @@ while [[ $# -gt 0 ]]; do
             FOLDER_ID="$2"
             shift 2
             ;;
+        -a|--auto)
+            AUTO_DETECT=1
+            shift
+            ;;
         -v|--verbose)
             VERBOSE=1
             shift
@@ -396,6 +481,11 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+# Auto-detect ROM file if requested or if FILE_PATH is empty
+if [ -z "$FILE_PATH" ] || [ "${AUTO_DETECT:-0}" -eq 1 ]; then
+    detect_rom_file || true
+fi
 
 # Interactive Mode if service or file not provided
 if [ -z "$SERVICE" ] || [ -z "$FILE_PATH" ]; then

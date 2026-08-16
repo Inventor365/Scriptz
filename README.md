@@ -8,6 +8,7 @@ Designed for developers, ROM maintainers, CI/CD pipelines, and terminal enthusia
 
 ## ✨ Features
 
+- 📱 **Android ROM Auto-Detection**: Automatically detects built ROM `.zip` files (2GB+ / 3GB+) located in `out/target/product/<codename>/` without needing to type long paths.
 - ⚡ **High-Speed SourceForge Uploads**: Solves slow transfer speeds on SourceForge by using `rsync` over SSH with optimized TCP QoS, disabled compression on archives, and high-performance ciphers (`ChaCha20-Poly1305`, `AES-128-GCM`).
 - 🔄 **Resumable Transfers**: Interrupted SourceForge uploads automatically resume where they left off without wasting bandwidth.
 - 🎯 **Smart GoFile Integration**: Dynamically queries GoFile APIs to locate the best available server, with optional API Token and Folder ID support.
@@ -74,6 +75,7 @@ SERVICES (-s / --service):
 
 OPTIONS:
   -f, --file <path>        Path to the file to upload
+  -a, --auto               Auto-detect Android ROM zip in out/target/product/*/
   -s, --service <service>  Target upload service (number or name)
   -u, --user <username>    Username (for SourceForge)
   -p, --path <path>        Target path / project folder (for SourceForge)
