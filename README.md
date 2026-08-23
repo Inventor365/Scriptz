@@ -31,24 +31,25 @@ Designed for developers, ROM maintainers, CI/CD pipelines, and terminal enthusia
 
 ### Run directly from Git / Curl
 
+**Interactive mode:**
 ```bash
-# Interactive mode
 bash <(curl -sL https://raw.githubusercontent.com/Inventor365/Scriptz/main/upload.sh)
+```
 
-# CLI mode example (GoFile)
+**CLI mode example (GoFile):**
+```bash
 bash <(curl -sL https://raw.githubusercontent.com/Inventor365/Scriptz/main/upload.sh) -f "build.zip" -s gofile
+```
 
-# CLI mode example (SourceForge)
+**CLI mode example (SourceForge):**
+```bash
 bash <(curl -sL https://raw.githubusercontent.com/Inventor365/Scriptz/main/upload.sh) -f "rom.zip" -s sourceforge -u "username" -p "myproject/v1.0"
 ```
 
 ### Local Clone & Run
 
 ```bash
-git clone https://github.com/Inventor365/Scriptz.git
-cd Scriptz
-chmod +x upload.sh
-./upload.sh
+git clone https://github.com/Inventor365/Scriptz.git && cd Scriptz && chmod +x upload.sh && ./upload.sh
 ```
 
 ---
