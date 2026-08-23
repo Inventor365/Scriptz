@@ -232,7 +232,7 @@ upload_pixeldrain() {
 
     local file_id=""
     if command -v jq &>/dev/null; then
-        file_id=$(echo "$response" | jq -r '.id // empty')
+        file_id=$(echo "$response" | jq -r '.id // empty' 2>/dev/null)
     elif command -v python3 &>/dev/null; then
         file_id=$(echo "$response" | python3 -c 'import sys, json; print(json.load(sys.stdin).get("id",""))' 2>/dev/null)
     else
@@ -265,11 +265,11 @@ upload_tempsh() {
 upload_gofile() {
     echo -e "${CYAN}Fetching best available GoFile server...${NC}"
     local server_json
-    server_json=$(curl -s --connect-timeout 10 https://api.gofile.io/servers || true)
+    server_json=$(curl -s --connect-timeout 10 -A "Mozilla/5.0" https://api.gofile.io/servers || true)
 
     local server=""
     if command -v jq &>/dev/null; then
-        server=$(echo "$server_json" | jq -r '.data.servers[0].name // .data.serversAllZone[0].name // empty')
+        server=$(echo "$server_json" | jq -r '.data.servers[0].name // .data.serversAllZone[0].name // empty' 2>/dev/null)
     elif command -v python3 &>/dev/null; then
         server=$(echo "$server_json" | python3 -c 'import sys, json; d=json.load(sys.stdin); print(d.get("data",{}).get("servers",[{}])[0].get("name") or d.get("data",{}).get("serversAllZone",[{}])[0].get("name",""))' 2>/dev/null)
     else
@@ -296,7 +296,7 @@ upload_gofile() {
 
     local download_url=""
     if command -v jq &>/dev/null; then
-        download_url=$(echo "$response" | jq -r '.data.downloadPage // empty')
+        download_url=$(echo "$response" | jq -r '.data.downloadPage // empty' 2>/dev/null)
     elif command -v python3 &>/dev/null; then
         download_url=$(echo "$response" | python3 -c 'import sys, json; print(json.load(sys.stdin).get("data",{}).get("downloadPage",""))' 2>/dev/null)
     else
