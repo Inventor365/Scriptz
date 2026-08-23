@@ -263,18 +263,39 @@ upload_tempsh() {
 # 5. GoFile
 # ------------------------------------------------------------------------------
 upload_gofile() {
-    echo -e "${CYAN}Fetching best available GoFile server...${NC}"
-    local server_json
-    server_json=$(curl -s --connect-timeout 10 -A "Mozilla/5.0" https://api.gofile.io/servers || true)
-
-    local server=""
-    if command -v jq &>/dev/null; then
-        server=$(echo "$server_json" | jq -r '.data.servers[0].name // .data.serversAllZone[0].name // empty' 2>/dev/null)
-    elif command -v python3 &>/dev/null; then
-        server=$(echo "$server_json" | python3 -c 'import sys, json; d=json.load(sys.stdin); print(d.get("data",{}).get("servers",[{}])[0].get("name") or d.get("data",{}).get("serversAllZone",[{}])[0].get("name",""))' 2>/dev/null)
-    else
-        server=$(echo "$server_json" | grep -Po '(?<="name":")[^"]*' | head -n 1)
+    local token="$KEY"
+    if [ -z "$token" ]; then
+        echo -e "${CYAN}Creating GoFile guest session...${NC}"
+        for attempt in {1..3}; do
+            local account_resp
+            account_resp=$(curl -s -A "Mozilla/5.0" --connect-timeout 10 -X POST https://api.gofile.io/accounts || true)
+            if command -v jq &>/dev/null; then
+                token=$(echo "$account_resp" | jq -r '.data.token // empty' 2>/dev/null)
+            elif command -v python3 &>/dev/null; then
+                token=$(echo "$account_resp" | python3 -c 'import sys, json; print(json.load(sys.stdin).get("data",{}).get("token",""))' 2>/dev/null)
+            else
+                token=$(echo "$account_resp" | grep -Po '(?<="token":")[^"]*')
+            fi
+            [ -n "$token" ] && break
+            sleep 1
+        done
     fi
+
+    echo -e "${CYAN}Fetching best available GoFile server...${NC}"
+    local server=""
+    for attempt in {1..3}; do
+        local server_json
+        server_json=$(curl -s --connect-timeout 10 -A "Mozilla/5.0" https://api.gofile.io/servers || true)
+        if command -v jq &>/dev/null; then
+            server=$(echo "$server_json" | jq -r '.data.servers[0].name // .data.serversAllZone[0].name // empty' 2>/dev/null)
+        elif command -v python3 &>/dev/null; then
+            server=$(echo "$server_json" | python3 -c 'import sys, json; d=json.load(sys.stdin); print(d.get("data",{}).get("servers",[{}])[0].get("name") or d.get("data",{}).get("serversAllZone",[{}])[0].get("name",""))' 2>/dev/null)
+        else
+            server=$(echo "$server_json" | grep -Po '(?<="name":")[^"]*' | head -n 1)
+        fi
+        [ -n "$server" ] && break
+        sleep 1
+    done
 
     if [ -z "$server" ]; then
         echo -e "${YELLOW}Warning: Could not fetch server dynamically, falling back to 'store3'.${NC}"
@@ -283,9 +304,9 @@ upload_gofile() {
 
     echo -e "${CYAN}Uploading to GoFile server [${BOLD}$server${NC}${CYAN}]...${NC}"
 
-    local curl_opts=("-#" "-F" "file=@$FILE_PATH")
-    if [ -n "$KEY" ]; then
-        curl_opts+=("-F" "token=$KEY")
+    local curl_opts=("-#" "-A" "Mozilla/5.0" "-F" "file=@$FILE_PATH")
+    if [ -n "$token" ]; then
+        curl_opts+=("-F" "token=$token")
     fi
     if [ -n "$FOLDER_ID" ]; then
         curl_opts+=("-F" "folderId=$FOLDER_ID")
