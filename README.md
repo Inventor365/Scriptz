@@ -1,6 +1,6 @@
 # 🚀 High-Speed File Upload Script
 
-A powerful, high-performance Bash upload script supporting multiple file-hosting services with specialized performance optimizations for **SourceForge (FRS)** and **GoFile.io**.
+A powerful, high-performance upload script for **Linux**, **macOS**, and **Windows** supporting multiple file-hosting services with specialized performance optimizations for **SourceForge (FRS)** and **GoFile.io**.
 
 Designed for developers, ROM maintainers, CI/CD pipelines, and terminal enthusiasts.
 
@@ -8,8 +8,9 @@ Designed for developers, ROM maintainers, CI/CD pipelines, and terminal enthusia
 
 ## ✨ Features
 
+- 💻 **Cross-Platform**: Full native support for **Linux / macOS** (`upload.sh`) and **Windows** (`upload.ps1`, `upload.bat`).
 - 📱 **Android ROM Auto-Detection**: Automatically detects built ROM `.zip` files (2GB+ / 3GB+) located in `out/target/product/<codename>/` without needing to type long paths.
-- ⚡ **High-Speed SourceForge Uploads**: Solves slow transfer speeds on SourceForge by using `rsync` over SSH with optimized TCP QoS, disabled compression on archives, and high-performance ciphers (`ChaCha20-Poly1305`, `AES-128-GCM`).
+- ⚡ **High-Speed SourceForge Uploads**: Solves slow transfer speeds on SourceForge by using `rsync` / optimized `scp` over SSH with TCP QoS, disabled compression on archives, and high-performance ciphers (`ChaCha20-Poly1305`, `AES-128-GCM`).
 - 🔄 **Resumable Transfers**: Interrupted SourceForge uploads automatically resume where they left off without wasting bandwidth.
 - 🎯 **Smart GoFile Integration**: Dynamically queries GoFile APIs to locate the best available server, with optional API Token and Folder ID support.
 - 🛠️ **Multi-Service Support**:
@@ -21,7 +22,7 @@ Designed for developers, ROM maintainers, CI/CD pipelines, and terminal enthusia
   6. **Oshi.at**
   7. **SourceForge (FRS)**
   8. **VexFiles**
-- 💻 **Dual Mode Execution**:
+- 🖥️ **Dual Mode Execution**:
   - **Interactive Mode**: Easy terminal UI with clear prompts.
   - **CLI / Pipeline Mode**: Fully automatable with command-line flags.
 
@@ -29,25 +30,60 @@ Designed for developers, ROM maintainers, CI/CD pipelines, and terminal enthusia
 
 ## 🚀 Quick Start
 
-### Run directly from Git / Curl
+### 🪟 Windows
 
-**Interactive mode:**
+#### Run directly from PowerShell:
+```powershell
+irm https://raw.githubusercontent.com/Inventor365/Scriptz/main/upload.ps1 | iex
+```
+
+#### Local Clone & Run:
+```powershell
+git clone https://github.com/Inventor365/Scriptz.git
+cd Scriptz
+
+# Interactive mode:
+.\upload.ps1
+
+# Or double-click upload.bat / run from CMD:
+upload.bat
+```
+
+#### Windows CLI Examples:
+```powershell
+# GoFile
+.\upload.ps1 -f "build.zip" -s gofile
+
+# SourceForge High-Speed
+.\upload.ps1 -f "rom.zip" -s sourceforge -u "username" -p "myproject/v1.0"
+
+# Auto-detect Android ROM
+.\upload.ps1 -a -s sourceforge -u "username" -p "myproject/peridot"
+
+# PixelDrain with API key
+.\upload.ps1 -f "app.apk" -s pixeldrain -k "YOUR_API_KEY"
+
+# Using Command Prompt (upload.bat)
+upload.bat -f "build.zip" -s gofile
+```
+
+---
+
+### 🐧 Linux & macOS
+
+#### Run directly from Git / Curl:
 ```bash
+# Interactive mode
 bash <(curl -sL https://raw.githubusercontent.com/Inventor365/Scriptz/main/upload.sh)
-```
 
-**CLI mode example (GoFile):**
-```bash
+# CLI mode example (GoFile)
 bash <(curl -sL https://raw.githubusercontent.com/Inventor365/Scriptz/main/upload.sh) -f "build.zip" -s gofile
-```
 
-**CLI mode example (SourceForge):**
-```bash
+# CLI mode example (SourceForge)
 bash <(curl -sL https://raw.githubusercontent.com/Inventor365/Scriptz/main/upload.sh) -f "rom.zip" -s sourceforge -u "username" -p "myproject/v1.0"
 ```
 
-### Local Clone & Run
-
+#### Local Clone & Run:
 ```bash
 git clone https://github.com/Inventor365/Scriptz.git && cd Scriptz && chmod +x upload.sh && ./upload.sh
 ```
@@ -59,10 +95,13 @@ git clone https://github.com/Inventor365/Scriptz.git && cd Scriptz && chmod +x u
 ```text
 USAGE:
   Interactive mode:
-    ./upload.sh
+    Linux / macOS:  ./upload.sh
+    Windows:        .\upload.ps1  (or upload.bat)
 
   Command line mode:
-    ./upload.sh -f <file_path> -s <service> [options]
+    Linux / macOS:  ./upload.sh -f <file_path> -s <service> [options]
+    Windows:        .\upload.ps1 -f <file_path> -s <service> [options]
+                    upload.bat -f <file_path> -s <service> [options]
 
 SERVICES (-s / --service):
   1 | github       GitHub Release
